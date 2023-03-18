@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  node:
+    container_name: node
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
+    volumes:
+      - node_volume:/server
+      - ./server:/server
+      # Ignoring any changes made in "node_modules" folder
+      - /server/node_modules
+    environment:
+      - PORT=5000
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      - mongo
+
+  react:
+    container_name: react
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - ./client:/client
+      - /client/node_modules
+    ports:
+      - 3000:3000
+    environment:
+      # Enabling hot reload
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - node
+
+  mongo:
+    container_name: mongo
+    image: mongo
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${DB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mongo_db:/data/db
+    command: mongod --quiet --logpath /dev/null
+
+  redis:
+    container_name: redis
+    image: redis
+
+volumes:
+  node_volume:
+  mongo_db:
